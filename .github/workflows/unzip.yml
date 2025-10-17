@@ -1,0 +1,45 @@
+name: Unzip GlyphWolf.zip
+
+on:
+  # Ręczne uruchomienie z karty Actions
+  workflow_dispatch:
+  # Auto—gdy pojawi się / zmieni ZIP w głównym katalogu
+  push:
+    paths:
+      - 'GlyphWolf.zip'
+
+permissions:
+  contents: write   # pozwala na commit/push przez GITHUB_TOKEN
+
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Unzip & remove archive
+        run: |
+          if [ ! -f GlyphWolf.zip ]; then
+            echo "GlyphWolf.zip not found at repo root."
+            exit 1
+          fi
+          unzip -o GlyphWolf.zip -d .
+          rm -f GlyphWolf.zip
+
+      - name: Commit unpacked files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          # jeśli brak zmian — nie rób commit
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Auto-unzip GlyphWolf.zip"
+          # zabezpieczenie przed non-fast-forward (w razie równoległych pushy)
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || true
+          git push origin HEAD:"${GITHUB_REF_NAME}"
