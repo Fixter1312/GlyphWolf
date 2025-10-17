@@ -6,12 +6,17 @@ on:
       - main
       - master
 
+permissions:
+  contents: write   # ⬅️ to jest kluczowe, bez tego nie działa push
+
 jobs:
   unzip:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install unzip
         run: sudo apt-get update && sudo apt-get install -y unzip
