@@ -24,7 +24,21 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      # Pobiera i udostępnia Gradle 8.7 (kompatybilny z AGP 8.6.x z naszego projektu)
+      # >>> KLUCZOWE: doinstaluj platformę i build-tools, które pasują do compileSdk=35
+      - name: Install Android SDK components
+        run: |
+          sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          yes | sdkmanager --licenses
+
+      # (opcjonalnie) upewnij się, że AAR jest w repo – w przeciwnym razie build i tak padnie
+      - name: Verify AAR presence
+        run: |
+          ls -la app/libs || true
+          if [ ! -f "app/libs/glyph-matrix-sdk-1.0.aar" ]; then
+            echo "::error ::Missing SDK AAR at app/libs/glyph-matrix-sdk-1.0.aar"
+            exit 1
+          fi
+
       - name: Set up Gradle 8.7
         uses: gradle/gradle-build-action@v3
         with:
@@ -32,7 +46,7 @@ jobs:
 
       - name: Build Debug APK
         run: |
-          gradle :app:assembleDebug
+          gradle :app:assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
