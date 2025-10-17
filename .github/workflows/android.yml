@@ -24,13 +24,12 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      # >>> KLUCZOWE: doinstaluj platformę i build-tools, które pasują do compileSdk=35
+      # >>> dopasowane do compileSdk=35
       - name: Install Android SDK components
         run: |
           sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
           yes | sdkmanager --licenses
 
-      # (opcjonalnie) upewnij się, że AAR jest w repo – w przeciwnym razie build i tak padnie
       - name: Verify AAR presence
         run: |
           ls -la app/libs || true
@@ -44,9 +43,18 @@ jobs:
         with:
           gradle-version: 8.7
 
+      # --- NOWE: szczegółowe logi z mergowania manifestu
+      - name: Manifest (verbose)
+        run: |
+          gradle :app:processDebugMainManifest --stacktrace --info --warning-mode all
+          echo "==== Merged manifest preview ===="
+          # Ścieżka merged manifestu bywa różna między wersjami AGP – spróbujmy najczęstszych:
+          find app/build -type f -name "AndroidManifest.xml" | sed -n '1,50p'
+
+      # --- BUILD z pełnymi logami
       - name: Build Debug APK
         run: |
-          gradle :app:assembleDebug --stacktrace
+          gradle :app:assembleDebug --stacktrace --info --warning-mode all
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
